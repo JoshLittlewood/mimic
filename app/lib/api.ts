@@ -9,7 +9,7 @@ export async function fetchAvailableItems(): Promise<RequestItem[]> {
 }
 
 export async function executeRequest(config: RequestConfig): Promise<unknown> {
-  const { method, url, headers, body } = config;
+  const { method, url, headers, body, contentType } = config;
 
   // Use proxy to avoid CORS issues
   const response = await fetch('/api/proxy', {
@@ -17,13 +17,18 @@ export async function executeRequest(config: RequestConfig): Promise<unknown> {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ method, url, headers, body }),
+    body: JSON.stringify({ method, url, headers, body, contentType }),
   });
 
   const data = await response.json();
 
   if (!response.ok) {
     throw new Error(data.error || `Request failed: ${response.status}`);
+  }
+
+  // Unwrap raw text responses
+  if (data._rawText !== undefined) {
+    return data._rawText;
   }
 
   return data;

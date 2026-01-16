@@ -1,8 +1,9 @@
 export interface RequestConfig {
-  method: 'GET' | 'POST';
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   url: string;
   headers?: Record<string, string>;
   body?: unknown;
+  contentType?: string; // e.g., 'text/plain', 'application/xml' - defaults to 'application/json'
 }
 
 export type RequestCategory = 'ui' | 'api' | 'payment';
