@@ -11,22 +11,20 @@ export async function fetchAvailableItems(): Promise<RequestItem[]> {
 export async function executeRequest(config: RequestConfig): Promise<unknown> {
   const { method, url, headers, body } = config;
 
-  const response = await fetch(url, {
-    method,
+  // Use proxy to avoid CORS issues
+  const response = await fetch('/api/proxy', {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...headers,
     },
-    body: method === 'POST' && body ? JSON.stringify(body) : undefined,
+    body: JSON.stringify({ method, url, headers, body }),
   });
 
+  const data = await response.json();
+
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+    throw new Error(data.error || `Request failed: ${response.status}`);
   }
 
-  const contentType = response.headers.get('content-type');
-  if (contentType?.includes('application/json')) {
-    return response.json();
-  }
-  return response.text();
+  return data;
 }

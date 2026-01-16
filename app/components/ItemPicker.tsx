@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { RequestItem, RequestCategory } from "../types";
 import { fetchAvailableItems } from "../lib/api";
 
@@ -10,7 +10,7 @@ interface ItemPickerProps {
 
 const categoryConfig: Record<
   RequestCategory,
-  { label: string; icon: JSX.Element }
+  { label: string; icon: React.ReactNode }
 > = {
   ui: {
     label: "UI Actions",
