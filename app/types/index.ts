@@ -40,3 +40,28 @@ export interface SequenceDelayItem extends BaseSequenceItem {
 }
 
 export type SequenceItem = SequenceRequestItem | SequenceDelayItem;
+
+// Saved flow types - stored without runtime state (status, result, error)
+export interface SavedRequestItem {
+  type: 'request';
+  id: string;
+  name: string;
+  description?: string;
+  category: RequestCategory;
+  request: RequestConfig;
+}
+
+export interface SavedDelayItem {
+  type: 'delay';
+  delayMs: number;
+}
+
+export type SavedSequenceItem = SavedRequestItem | SavedDelayItem;
+
+export interface SavedFlow {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  items: SavedSequenceItem[];
+}

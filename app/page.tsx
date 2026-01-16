@@ -6,15 +6,21 @@ import {
   SequenceItem,
   SequenceDelayItem,
   SequenceRequestItem,
+  SavedFlow,
 } from "./types";
 import { ItemPicker } from "./components/ItemPicker";
 import { SequenceList } from "./components/SequenceList";
 import { RunButton } from "./components/RunButton";
+import { SavedFlows } from "./components/SavedFlows";
 import { useSequenceRunner } from "./hooks/useSequenceRunner";
+import { useSavedFlows, toSequenceItems } from "./hooks/useSavedFlows";
 
 export default function Home() {
   const [sequence, setSequence] = useState<SequenceItem[]>([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [flowName, setFlowName] = useState("");
   const { isRunning, run, reset } = useSequenceRunner();
+  const { flows, saveFlow, deleteFlow } = useSavedFlows();
 
   const handleAddItem = useCallback((item: RequestItem) => {
     const newItem: SequenceRequestItem = {
@@ -94,6 +100,30 @@ export default function Home() {
     reset(handleUpdateItem, sequence);
   }, [reset, handleUpdateItem, sequence]);
 
+  const handleSaveFlow = useCallback(() => {
+    if (flowName.trim() && sequence.length > 0) {
+      saveFlow(flowName.trim(), sequence);
+      setFlowName("");
+      setShowSaveDialog(false);
+    }
+  }, [flowName, sequence, saveFlow]);
+
+  const handleLoadFlow = useCallback((flow: SavedFlow) => {
+    setSequence(toSequenceItems(flow.items));
+  }, []);
+
+  const handleRunSavedFlow = useCallback(
+    (flow: SavedFlow) => {
+      const items = toSequenceItems(flow.items);
+      setSequence(items);
+      // Small delay to ensure state is updated before running
+      setTimeout(() => {
+        run(items, handleUpdateItem);
+      }, 50);
+    },
+    [run, handleUpdateItem]
+  );
+
   const hasCompletedItems = sequence.some(
     (item) => item.status === "success" || item.status === "error"
   );
@@ -135,25 +165,48 @@ export default function Home() {
               <h2 className="text-lg font-semibold text-white">
                 Action Sequence
               </h2>
-              <button
-                onClick={handleAddDelay}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#00539F] hover:bg-[#00539F]/10 rounded-lg transition-colors"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div className="flex items-center gap-2">
+                {sequence.length > 0 && (
+                  <button
+                    onClick={() => setShowSaveDialog(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#00539F] hover:bg-[#00539F]/10 rounded-lg transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                      />
+                    </svg>
+                    Save
+                  </button>
+                )}
+                <button
+                  onClick={handleAddDelay}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-[#00539F] hover:bg-[#00539F]/10 rounded-lg transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Add Delay
-              </button>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  Add Delay
+                </button>
+              </div>
             </div>
             <SequenceList
               items={sequence}
@@ -179,7 +232,56 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Saved Flows Section */}
+        <div className="mt-6 bg-[#12121a] border border-[#1e1e2e] rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            Saved Flows
+          </h2>
+          <SavedFlows
+            flows={flows}
+            onLoad={handleLoadFlow}
+            onRun={handleRunSavedFlow}
+            onDelete={deleteFlow}
+          />
+        </div>
       </div>
+
+      {/* Save Flow Dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Save Flow</h3>
+            <input
+              type="text"
+              value={flowName}
+              onChange={(e) => setFlowName(e.target.value)}
+              placeholder="Enter flow name..."
+              className="w-full px-4 py-3 bg-[#1a1a24] border border-[#2a2a3a] rounded-lg text-white placeholder-gray-500 focus:border-[#00539F] focus:outline-none mb-4"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSaveFlow();
+                if (e.key === "Escape") setShowSaveDialog(false);
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSaveDialog(false)}
+                className="flex-1 py-2 px-4 rounded-lg font-medium text-gray-400 hover:bg-[#1e1e2e] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveFlow}
+                disabled={!flowName.trim()}
+                className="flex-1 py-2 px-4 rounded-lg font-medium bg-[#00539F] hover:bg-[#004080] text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
